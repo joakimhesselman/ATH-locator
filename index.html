@@ -6,7 +6,7 @@
     <title>ALL TIME HIGH Success Locator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      /* Dark Mode Anpassningar (samma som tidigare) */
+      /* Dark Mode Anpassningar */
       body {
         font-family: 'Inter', sans-serif;
         min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center;
@@ -36,7 +36,7 @@
           color: #60a5fa; font-weight: 700; font-size: 1.25rem; margin-bottom: 0.25rem;
       }
       .target-text {
-          color: #d1d5db; font-size: 0.875rem; margin-bottom: 1rem; /* Mindre marginal för att ge plats åt knapp */
+          color: #d1d5db; font-size: 0.875rem; margin-bottom: 1rem;
       }
        .footer-separator {
           border: none; border-top: 2px dashed #9ca3af; margin-top: 1rem; margin-bottom: 0.5rem;
@@ -46,7 +46,7 @@
       }
       #error { color: #f87171; }
 
-      /* Pulsationsanimation (samma som tidigare) */
+      /* Pulsationsanimation */
       @keyframes pulse {
         0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.5); }
         50% { transform: scale(1.05); box-shadow: 0 0 10px 10px rgba(96, 165, 250, 0); }
@@ -55,23 +55,13 @@
 
       /* Stil för aktiveringsknapp */
       .activate-button {
-          background-color: #10b981; /* Grön (Tailwind emerald-500) */
-          color: white;
-          font-weight: bold;
-          padding: 0.5rem 1rem;
-          border-radius: 0.25rem;
-          border: 1px solid #059669; /* Mörkare grön kant */
-          cursor: pointer;
-          margin-bottom: 1rem; /* Utrymme under knappen */
-          transition: background-color 0.2s;
+          background-color: #10b981; color: white; font-weight: bold; padding: 0.5rem 1rem;
+          border-radius: 0.25rem; border: 1px solid #059669; cursor: pointer;
+          margin-bottom: 1rem; transition: background-color 0.2s;
       }
-      .activate-button:hover {
-          background-color: #059669; /* Mörkare grön vid hover */
-      }
+      .activate-button:hover { background-color: #059669; }
       .activate-button:disabled {
-          background-color: #6b7280; /* Grå när inaktiv (Tailwind gray-500) */
-          cursor: not-allowed;
-          border-color: #4b5563;
+          background-color: #6b7280; cursor: not-allowed; border-color: #4b5563;
       }
 
     </style>
@@ -99,7 +89,7 @@
 
         <button id="activateCompassButton" class="activate-button">Aktivera Kompass</button>
 
-        <div id="error" class="mb-4 font-bold hidden"></div> {/* Flyttade felmeddelandet hit */}
+        <div id="error" class="mb-4 font-bold hidden"></div>
         <hr class="footer-separator">
         <p class="footer-text">// ALWAYS POINTING TO SUCCESS //</p>
 
@@ -111,7 +101,6 @@
         const distanceElement = document.getElementById('distance');
         const errorElement = document.getElementById('error');
         const arrowCircleElement = document.querySelector('.arrow-circle');
-        // Ny referens till knappen
         const activateCompassButton = document.getElementById('activateCompassButton');
 
         // --- Målkoordinater ---
@@ -124,17 +113,17 @@
         let targetBearing = null;
         let deviceHeading = null;
         let orientationPermissionGranted = false;
-        let orientationListenerActive = false; // Flagga för att se om lyssnaren är aktiv
+        let orientationListenerActive = false;
 
-        // --- Funktioner (Matematik, samma som tidigare) ---
+        // --- Funktioner (Matematik) ---
         function toRadians(degrees) { return degrees * Math.PI / 180; }
         function toDegrees(radians) { return radians * 180 / Math.PI; }
-        function calculateDistance(lat1, lon1, lat2, lon2) { /* ... samma ... */
+        function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371; const dLat = toRadians(lat2 - lat1); const dLon = toRadians(lon2 - lon1);
             const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); return R * c;
          }
-        function calculateBearing(lat1, lon1, lat2, lon2) { /* ... samma ... */
+        function calculateBearing(lat1, lon1, lat2, lon2) {
             const phi1 = toRadians(lat1); const lambda1 = toRadians(lon1); const phi2 = toRadians(lat2); const lambda2 = toRadians(lon2);
             const y = Math.sin(lambda2 - lambda1) * Math.cos(phi2); const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(lambda2 - lambda1);
             let brng = Math.atan2(y, x); brng = toDegrees(brng); return (brng + 360) % 360;
@@ -146,7 +135,6 @@
                 let rotationAngle = targetBearing - deviceHeading;
                 arrowElement.style.transform = `rotate(${rotationAngle}deg)`;
                 arrowElement.style.transformOrigin = 'center center';
-                // Dölj ev. orienteringsfel om vi nu får data
                  if (errorElement.textContent.includes("orienteringsdata") || errorElement.textContent.includes("kompassdata")) {
                      hideError();
                  }
@@ -160,12 +148,10 @@
                 targetBearing = calculateBearing(latitude, longitude, targetLat, targetLon);
                 const distanceMeters = distanceKm * 1000;
 
-                // Uppdatera avståndstext
                 distanceElement.textContent = distanceMeters < 1000
                     ? `Distance: ${distanceMeters.toFixed(0)} m`
                     : `Distance: ${distanceKm.toFixed(1)} km`;
 
-                // Hantera pulserande effekt
                 if (distanceMeters < 200) {
                     if (!arrowCircleElement.classList.contains('pulsating')) {
                         arrowCircleElement.classList.add('pulsating');
@@ -175,11 +161,10 @@
                         arrowCircleElement.classList.remove('pulsating');
                     }
                 }
-                // Dölj ev. positionsfel
                 if (!errorElement.textContent.includes("orienteringsdata") && !errorElement.textContent.includes("kompassdata")) {
                     hideError();
                 }
-                updateArrowRotation(); // Försök uppdatera rotationen direkt
+                updateArrowRotation();
             } catch (e) {
                 console.error("Fel vid UI-uppdatering (plats):", e);
                 showError('Ett internt fel uppstod vid platsuppdatering.');
@@ -198,7 +183,7 @@
             errorElement.textContent = '';
             errorElement.classList.add('hidden');
         }
-        function handleLocationError(error) { /* ... samma som tidigare ... */
+        function handleLocationError(error) {
              let message = 'Okänt fel vid hämtning av position.';
              switch(error.code) {
                 case error.PERMISSION_DENIED: message = "Du nekade åtkomst till platsinformation."; break;
@@ -218,18 +203,14 @@
             if (typeof event.webkitCompassHeading !== 'undefined') { heading = event.webkitCompassHeading; }
 
             if (heading === null || typeof heading === 'undefined') {
-                if (orientationPermissionGranted) { // Visa bara fel om vi tidigare haft åtkomst
+                if (orientationPermissionGranted) {
                     showError("Kunde inte läsa kompassdata från enheten.");
                 }
                 deviceHeading = null; return;
             }
-            // Om vi får data första gången, markera att åtkomst finns
             if (!orientationPermissionGranted) {
                  console.log("Orienteringsdata mottagen för första gången.");
                  orientationPermissionGranted = true;
-                 // Dölj knappen när det funkar? (Valfritt)
-                 // activateCompassButton.style.display = 'none';
-                 // Eller inaktivera den
                  activateCompassButton.disabled = true;
                  activateCompassButton.textContent = 'Kompass Aktiv';
             }
@@ -237,69 +218,54 @@
             updateArrowRotation();
         }
 
-        // Funktion som ANROPAS VID KNAPPTRYCK för att starta lyssnaren
         function requestOrientationPermission() {
-            hideError(); // Dölj gamla fel innan vi försöker igen
+            hideError();
             console.log("Försöker begära orienteringsåtkomst...");
-            activateCompassButton.disabled = true; // Inaktivera medan vi frågar
+            activateCompassButton.disabled = true;
             activateCompassButton.textContent = 'Begär åtkomst...';
 
-            // --- iOS 13+ behörighetsförfrågan ---
             if ('DeviceOrientationEvent' in window && typeof DeviceOrientationEvent.requestPermission === 'function') {
                  DeviceOrientationEvent.requestPermission()
                     .then(permissionState => {
                         console.log("Resultat från requestPermission:", permissionState);
                         if (permissionState === 'granted') {
-                            // Lägg TILL lyssnare FÖRST EFTER att tillstånd getts
                             window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-                            window.addEventListener('deviceorientation', handleOrientation, true); // Fallback
+                            window.addEventListener('deviceorientation', handleOrientation, true);
                             orientationListenerActive = true;
                             console.log("Orienteringslyssnare tillagd (iOS).");
-                            // Knappen hanteras i handleOrientation när data tas emot
                         } else {
                             showError("Åtkomst till orienteringsdata nekades.");
-                            activateCompassButton.disabled = false; // Återaktivera knappen vid nekat svar
+                            activateCompassButton.disabled = false;
                             activateCompassButton.textContent = 'Aktivera Kompass';
                         }
                     })
                     .catch(error => {
                          console.error("Fel vid begäran om orienteringsåtkomst:", error);
                          showError("Kunde inte begära åtkomst till orienteringsdata. (Fel: " + error.name + ")");
-                         activateCompassButton.disabled = false; // Återaktivera knappen vid fel
+                         activateCompassButton.disabled = false;
                          activateCompassButton.textContent = 'Aktivera Kompass';
                      });
             }
-            // --- För Android och äldre webbläsare (ingen explicit requestPermission) ---
             else if ('DeviceOrientationEvent' in window) {
                 console.log("Lägger till standard 'deviceorientation' lyssnare (Android/äldre).");
-                // Lägg till lyssnare direkt
                 window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-                window.addEventListener('deviceorientation', handleOrientation, true); // Fallback
+                window.addEventListener('deviceorientation', handleOrientation, true);
                 orientationListenerActive = true;
-                 // Här kan vi inte veta säkert om det funkar förrän handleOrientation körs
-                 // och sätter orientationPermissionGranted = true.
-                 // Knappen uppdateras i handleOrientation. Om ingen data kommer,
-                 // visas inget fel direkt, men knappen förblir aktiv.
-                 // Sätt en liten fördröjning för att se om data kommer
                  setTimeout(() => {
                     if (!orientationPermissionGranted) {
                         console.warn("Ingen orienteringsdata mottagen efter 3 sek (Android/äldre).");
-                        // Vi visar inget fel här, användaren kan försöka igen om de vill
                         activateCompassButton.disabled = false;
                         activateCompassButton.textContent = 'Aktivera Kompass (Försök igen?)';
                     }
                  }, 3000);
-
             }
-            // --- Om API:et inte stöds alls ---
             else {
                 showError("DeviceOrientationEvent stöds inte av din webbläsare/enhet.");
                 activateCompassButton.textContent = 'Kompass stöds ej';
-                // Behåll knappen inaktiverad
             }
         }
 
-        // Hämta användarens position (samma som tidigare)
+        // Hämta användarens position
         function getLocation() {
              distanceElement.textContent = 'Hämtar position...';
              if (!errorElement.textContent.includes("orienteringsdata") && !errorElement.textContent.includes("kompassdata")) {
@@ -320,15 +286,9 @@
             }
         }
 
-
         // --- Initialisering ---
-        getLocation(); // Hämta position direkt
-
-        // Lägg till event listener för knappen
+        getLocation();
         activateCompassButton.addEventListener('click', requestOrientationPermission);
-
-        // Starta INTE orienteringslyssnaren automatiskt längre
-        // startOrientationListener(); // Borttagen
 
     </script>
 
