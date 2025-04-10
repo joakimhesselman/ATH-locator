@@ -26,7 +26,8 @@
       .arrow-circle {
           width: 10rem; height: 10rem; border-radius: 50%; background-color: #374151;
           border: 2px solid #9ca3af; display: flex; align-items: center; justify-content: center;
-          margin: 0 auto 2rem auto; overflow: hidden;
+          margin: 0 auto 1.5rem auto; /* Minskad marginal under cirkel */
+          overflow: hidden;
       }
       #arrow-svg {
           width: 50%; height: 50%; transition: transform 0.1s linear; fill: #ef4444;
@@ -36,8 +37,23 @@
           color: #60a5fa; font-weight: 700; font-size: 1.25rem; margin-bottom: 0.25rem;
       }
       .target-text {
-          color: #d1d5db; font-size: 0.875rem; margin-bottom: 1rem;
+          color: #d1d5db; font-size: 0.875rem; margin-bottom: 0.5rem; /* Minskad marginal */
       }
+      /* Nytt element för feedback */
+      #feedbackMessage {
+          min-height: 4.5em; /* Ge utrymme för 3 rader text */
+          margin-top: 0.5rem;
+          margin-bottom: 1rem;
+          font-size: 0.9rem;
+          font-weight: bold;
+          white-space: pre-line; /* Tolka \n som radbrytning */
+          line-height: 1.5;
+          color: #d1d5db; /* Standardfärg */
+      }
+      .feedback-warning { color: #facc15; } /* Gul/Amber */
+      .feedback-success { color: #86efac; } /* Ljusgrön */
+      .feedback-alert { color: #4ade80; } /* Klarare grön för nära */
+
        .footer-separator {
           border: none; border-top: 2px dashed #9ca3af; margin-top: 1rem; margin-bottom: 0.5rem;
       }
@@ -52,6 +68,16 @@
         50% { transform: scale(1.05); box-shadow: 0 0 10px 10px rgba(96, 165, 250, 0); }
       }
       .pulsating { animation: pulse 1.5s infinite ease-in-out; }
+
+      /* Blinkande animation för "nära mål" */
+      @keyframes blink {
+        0%, 49% { opacity: 1; }
+        50%, 99% { opacity: 0.1; }
+        100% { opacity: 1; }
+      }
+      .blinking-success {
+        animation: blink 1s infinite step-end;
+      }
 
       /* Stil för aktiveringsknapp */
       .activate-button {
@@ -85,6 +111,7 @@
         <div id="info">
             <p id="distance" class="distance-text">Hämtar position...</p>
             <p class="target-text">Target: ALL TIME HIGH</p>
+            <div id="feedbackMessage"></div>
         </div>
 
         <button id="activateCompassButton" class="activate-button">Aktivera Kompass</button>
@@ -102,6 +129,8 @@
         const errorElement = document.getElementById('error');
         const arrowCircleElement = document.querySelector('.arrow-circle');
         const activateCompassButton = document.getElementById('activateCompassButton');
+        // Ny referens till feedback-elementet
+        const feedbackMessageElement = document.getElementById('feedbackMessage');
 
         // --- Målkoordinater ---
         const targetLat = 59.30998428196858;
@@ -114,6 +143,10 @@
         let deviceHeading = null;
         let orientationPermissionGranted = false;
         let orientationListenerActive = false;
+        // Ny variabel för att lagra föregående avstånd
+        let previousDistanceMeters = null;
+        // Tröskelvärde för att detektera rörelse (i meter)
+        const movementThreshold = 1.0; // Justera vid behov
 
         // --- Funktioner (Matematik) ---
         function toRadians(degrees) { return degrees * Math.PI / 180; }
@@ -141,35 +174,77 @@
             }
         }
 
+        // Uppdaterad funktion för att hantera plats, avstånd, pulsation OCH feedback
         function updateLocationUI(latitude, longitude) {
              currentLat = latitude; currentLon = longitude;
             try {
                 const distanceKm = calculateDistance(latitude, longitude, targetLat, targetLon);
                 targetBearing = calculateBearing(latitude, longitude, targetLat, targetLon);
-                const distanceMeters = distanceKm * 1000;
+                const currentDistanceMeters = distanceKm * 1000;
 
-                distanceElement.textContent = distanceMeters < 1000
-                    ? `Distance: ${distanceMeters.toFixed(0)} m`
+                // Uppdatera avståndstext
+                distanceElement.textContent = currentDistanceMeters < 1000
+                    ? `Distance: ${currentDistanceMeters.toFixed(0)} m`
                     : `Distance: ${distanceKm.toFixed(1)} km`;
 
-                if (distanceMeters < 200) {
+                // Nollställ feedback-stilar
+                feedbackMessageElement.className = ''; // Ta bort alla gamla klasser
+                feedbackMessageElement.classList.add('feedback-default'); // Lägg till standardklass? (Valfritt)
+
+                // Hantera feedback-meddelanden och pulsation
+                if (currentDistanceMeters < 200) {
+                    // Väldigt nära - Prioriterat meddelande
+                    feedbackMessageElement.textContent = "SUCCESS ALERT!\nSUPER CLOSE TO TARGET";
+                    feedbackMessageElement.classList.add('feedback-alert', 'blinking-success'); // Lägg till blinkande klass
+
                     if (!arrowCircleElement.classList.contains('pulsating')) {
                         arrowCircleElement.classList.add('pulsating');
                     }
                 } else {
-                    if (arrowCircleElement.classList.contains('pulsating')) {
-                        arrowCircleElement.classList.remove('pulsating');
+                    // Inte supernära, kolla rörelse om vi har ett föregående avstånd
+                    arrowCircleElement.classList.remove('pulsating'); // Stoppa pulsation
+                    feedbackMessageElement.classList.remove('blinking-success'); // Stoppa blinkande
+
+                    if (previousDistanceMeters !== null) {
+                        const distanceChange = currentDistanceMeters - previousDistanceMeters;
+
+                        if (distanceChange > movementThreshold) {
+                            // Rör sig bortåt
+                            feedbackMessageElement.textContent = "ALERT! UNSUCCESSFUL DIRECTION\nTURN AROUND";
+                            feedbackMessageElement.classList.add('feedback-warning');
+                        } else if (distanceChange < -movementThreshold) {
+                            // Rör sig närmare
+                            feedbackMessageElement.textContent = "SUCCESSFUL PATH\nYOU ARE ON TRACK\nABOUT TO GET ALL TIME HIGH";
+                            feedbackMessageElement.classList.add('feedback-success');
+                        } else {
+                            // Står stilla eller liten rörelse
+                            feedbackMessageElement.textContent = "FOLLOW ARROW FOR SUCCESS";
+                            // Behåll standardfärg
+                        }
+                    } else {
+                        // Första uppdateringen, inget att jämföra med
+                         feedbackMessageElement.textContent = "FOLLOW ARROW FOR SUCCESS";
+                         // Behåll standardfärg
                     }
                 }
+
+                // Uppdatera föregående avstånd för nästa jämförelse
+                previousDistanceMeters = currentDistanceMeters;
+
+                // Dölj eventuella positionsfel
                 if (!errorElement.textContent.includes("orienteringsdata") && !errorElement.textContent.includes("kompassdata")) {
                     hideError();
                 }
-                updateArrowRotation();
+                updateArrowRotation(); // Försök uppdatera rotationen direkt
+
             } catch (e) {
                 console.error("Fel vid UI-uppdatering (plats):", e);
                 showError('Ett internt fel uppstod vid platsuppdatering.');
                 targetBearing = null;
+                previousDistanceMeters = null; // Nollställ vid fel
                 arrowCircleElement.classList.remove('pulsating');
+                feedbackMessageElement.textContent = ''; // Rensa feedback vid fel
+                feedbackMessageElement.className = ''; // Rensa klasser vid fel
             }
         }
 
@@ -192,9 +267,11 @@
                 case error.UNKNOWN_ERROR: message = "Ett okänt fel uppstod vid platsinhämtning."; break;
             }
             showError(message); distanceElement.textContent = 'Kunde inte hämta position.';
-            currentLat = null; currentLon = null; targetBearing = null;
+            currentLat = null; currentLon = null; targetBearing = null; previousDistanceMeters = null;
             arrowElement.style.transform = 'rotate(0deg)';
             arrowCircleElement.classList.remove('pulsating');
+            feedbackMessageElement.textContent = '';
+            feedbackMessageElement.className = '';
          }
 
         // --- Sensor/Event Hantering ---
@@ -203,9 +280,7 @@
             if (typeof event.webkitCompassHeading !== 'undefined') { heading = event.webkitCompassHeading; }
 
             if (heading === null || typeof heading === 'undefined') {
-                if (orientationPermissionGranted) {
-                    showError("Kunde inte läsa kompassdata från enheten.");
-                }
+                if (orientationPermissionGranted) { showError("Kunde inte läsa kompassdata från enheten."); }
                 deviceHeading = null; return;
             }
             if (!orientationPermissionGranted) {
@@ -254,6 +329,7 @@
                  setTimeout(() => {
                     if (!orientationPermissionGranted) {
                         console.warn("Ingen orienteringsdata mottagen efter 3 sek (Android/äldre).");
+                        // Visa inget fel direkt, låt knappen vara aktiv
                         activateCompassButton.disabled = false;
                         activateCompassButton.textContent = 'Aktivera Kompass (Försök igen?)';
                     }
@@ -268,16 +344,21 @@
         // Hämta användarens position
         function getLocation() {
              distanceElement.textContent = 'Hämtar position...';
+             // Rensa gammal feedback vid ny positionsinhämtning? Kanske inte nödvändigt.
+             // feedbackMessageElement.textContent = '';
+             // feedbackMessageElement.className = '';
              if (!errorElement.textContent.includes("orienteringsdata") && !errorElement.textContent.includes("kompassdata")) {
                  hideError();
              }
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
+                // Använd watchPosition för att få kontinuerliga uppdateringar
+                navigator.geolocation.watchPosition(
                     (position) => {
-                        console.log(`Position hämtad: Lat ${position.coords.latitude}, Lon ${position.coords.longitude}`);
+                        console.log(`Position uppdaterad: Lat ${position.coords.latitude}, Lon ${position.coords.longitude}`);
                         updateLocationUI(position.coords.latitude, position.coords.longitude);
                     },
                     handleLocationError,
+                    // Hög noggrannhet, ingen cache, timeout per uppdatering
                     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
             } else {
@@ -287,7 +368,8 @@
         }
 
         // --- Initialisering ---
-        getLocation();
+        // Använd watchPosition istället för getCurrentPosition för att få uppdateringar
+        getLocation(); // Startar nu watchPosition
         activateCompassButton.addEventListener('click', requestOrientationPermission);
 
     </script>
