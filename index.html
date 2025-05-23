@@ -133,8 +133,8 @@
         const feedbackMessageElement = document.getElementById('feedbackMessage');
 
         // --- Målkoordinater ---
-        const targetLat = 59.31057618707363;
-        const targetLon = 17.98619523124271;
+        const targetLat = 59.31088391142848;
+        const targetLon = 18.006552217743405;
 
         // --- Variabler för state ---
         let currentLat = null;
@@ -214,7 +214,7 @@
                             feedbackMessageElement.classList.add('feedback-warning');
                         } else if (distanceChange < -movementThreshold) {
                             // Rör sig närmare
-                            feedbackMessageElement.textContent = "SUCCESSFUL PATH\nYOU ARE ON TRACK\nABOUT TO GET ALL TIME HIGH";
+                            feedbackMessageElement.textContent = "SUCCESSFUL DIRECTION\nLET'S GET ALL TIME HIGH";
                             feedbackMessageElement.classList.add('feedback-success');
                         } else {
                             // Står stilla eller liten rörelse
